@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
+#include <stdbool.h>
 
 typedef enum {
 	DEPOSIT,
@@ -128,8 +129,7 @@ void flushInputBuffer(){
 
 int main(){
 	
-	BankAccount users[10];
-	char name[50] = "Chad Takemall";
+	BankAccount user;
 	double balance = 500;
 	int userSelection;
 	int valid;
@@ -145,10 +145,21 @@ int main(){
 				valid = scanf("%d", &userSelection);
 			}while(valid != 1);
 		}
-		
+		flushInputBuffer();	
 		switch(userSelection){
 			case 1:
-				printf("Selected 1 \n");
+				bool val;
+				char name[50];
+				do{
+					val = fgets(name, sizeof(name), stdin) != NULL ? true : false;
+					if(!val){	
+                                       		printf("Invalid name please enter a valid name");
+                                	}
+					
+				}while(!val);
+				name[strcspn(name, "\n")] = 0;
+				createAccount(&user, name);
+				flushInputBuffer();
 				break;
 
 			case 2:
@@ -164,7 +175,7 @@ int main(){
 				break;
 
 			case 5:
-				printf("Selected 5 \n");
+				showAccount(&user);
 				break;
 			default:
 				printf("Please select options 1-5 or 9 to end/n");
