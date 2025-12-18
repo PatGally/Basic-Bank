@@ -31,6 +31,9 @@ int withdraw(BankAccount *account, const double amount);
 void wipeTransactionLog(BankAccount *account);
 void showTransactions(const BankAccount *account);
 void flushInputBuffer();
+void create(BankAccount *user);
+void submitDeposit(BankAccount *user, const TransactionType type);
+void submitWithdraw(BankAccount *user, const TransactionType type);
 
 void createAccount(BankAccount *account, const char* name){
 	strncpy(account->name, name, sizeof(account->name)-1);
@@ -96,7 +99,7 @@ void deposit(BankAccount *account, const double amount){
 	account->balance += amount;
 }
 
-int withdraw(BankAccount *account, const double amount){
+const int withdraw(BankAccount *account, const double amount){
 	double balance = account->balance;
 	if((balance -= amount) >= 0){
 		account->balance -= amount;
@@ -117,79 +120,166 @@ void display(){
          printf("1 Create an Account\n");
          printf("2 Deposit\n");
          printf("3 Withdraw\n");
-         printf("4 ShowBalance\n");
+         printf("4 Show Balance\n");
          printf("5 Show Transaction History\n");
 	 printf("9 To quit\n");
 }
 
-void flushInputBuffer(){
-	int c;
-	while((c = getchar()) != '\n' && c != EOF);
+
+void create(BankAccount *user){
+	bool val;
+	char name[50];
+
+	do {
+	    printf("Please enter your name: ");
+	    fflush(stdout);
+
+	    if (!fgets(name, sizeof(name), stdin)) {
+
+	        printf("Input error. Please try again.\n");
+	        val = false;
+	        continue;
+	    }
+
+
+	    name[strcspn(name, "\n")] = '\0';
+
+
+	    if (name[0] == '\0') {
+	        printf("Invalid name. Please enter a valid name.\n");
+	        val = false;
+	    } else {
+	        val = true; 
+	    }
+
+	} while (!val);
+
+
+	createAccount(user, name);
+
+}
+
+void submitDeposit(BankAccount *user, const TransactionType type){
+	
+	char buf[64];
+	double amount;
+    	int valid;
+
+	do {
+        	printf("Enter amount: ");
+
+        	if (!fgets(buf, sizeof(buf), stdin)) {
+            		printf("Input error. Try again.\n");
+            		valid = 0;
+            		continue;
+        	}
+
+        	char *endptr;
+        	amount = strtod(buf, &endptr);
+
+        	if (endptr == buf || *endptr != '\n') {
+        	    printf("Invalid input. Please enter a number.\n");
+        	    valid = 0;
+        	} else if (amount <= 0) {
+        	    printf("Amount must be more than 0.\n");
+        	    valid = 0;
+        	} else {
+        	    valid = 1;  
+        	}
+
+    	} while (!valid);
+
+   	logTransaction(user, type, amount); 
+	printf("Deposit Successful");
+
+}
+
+void submitWithdraw( BankAccount *user, const TransactionType type){
+	char buf[64];
+	double amount;
+	int valid;
+	do {
+                printf("Enter amount: ");
+
+                if (!fgets(buf, sizeof(buf), stdin)) {
+                        printf("Input error. Try again.\n");
+                        valid = 0;
+                        continue;
+                }
+		char *endptr;
+                amount = strtod(buf, &endptr);
+
+                if (endptr == buf || *endptr != '\n') {
+                    printf("Invalid input. Please enter a number.\n");
+                    valid = 0;
+                } else if (amount <= 0) {
+                    printf("Amount must be more than 0.\n");
+                    valid = 0;
+                } else {
+                    valid = 1;
+                }
+
+        } while (!valid);
+	
+	logTransaction(user, type, amount);
+        
+	printf("Withdraw successful\n");
+
 }
 
 int main(){
-	
+	char buf[64];
 	BankAccount user;
 	double balance = 500;
 	int userSelection;
 	int valid;
+	int userCreated = 0;
 	printf("Welcom to the bank\n");
-	do{
-		display();
-		valid = scanf("%d", &userSelection);
-		if(valid != 1){
-			do{
-				flushInputBuffer();
-				printf("Invalid Input\n");
-				display();
-				valid = scanf("%d", &userSelection);
-			}while(valid != 1);
-		}
-		flushInputBuffer();	
-		switch(userSelection){
-			case 1:
-				bool val;
-				char name[50];
-				do{
-					val = fgets(name, sizeof(name), stdin) != NULL ? true : false;
-					if(!val){	
-                                       		printf("Invalid name please enter a valid name");
-                                	}
-					
-				}while(!val);
-				name[strcspn(name, "\n")] = 0;
-				createAccount(&user, name);
-				flushInputBuffer();
-				break;
 
-			case 2:
-				printf("Selected 2 \n");
-				break;
-
-			case 3:
-				printf("Selected 3 \n");
-				break;
-
-			case 4:
-				printf("Selected 4 \n");
-				break;
-
-			case 5:
-				showAccount(&user);
-				break;
-			default:
-				printf("Please select options 1-5 or 9 to end/n");
-				break;
-		}
-	}while(userSelection != 9);
-//	createAccount(&user1, name);
 	
-//	logTransaction(&user1, DEPOSIT, 500);
-//	logTransaction(&user1, WITHDRAW, 422.21);
+	do {
+    	    display();
 
-//	showAccount(&user1);
+    	    if (!fgets(buf, sizeof(buf), stdin)) {
+        	continue;
+    	    }
+	
+	    userSelection = (int)strtol(buf, NULL, 10);
+		
+	    if (userCreated == 0 && userSelection != 1) {
+                 printf("Error: You must create an account first.\n");
+                 continue;
+            }
 
-//	wipeTransactionLog(&user1);		
+	    switch (userSelection) {
+	        case 1:
+	            create(&user);
+		    userCreated = 1;
+	            break;
+
+        	case 2:
+        	    submitDeposit(&user, DEPOSIT);
+        	    break;
+
+        	case 3:
+        	    submitWithdraw(&user, WITHDRAW);
+        	    break;
+
+        	case 4:
+        	    showAccount(&user);
+        	    break;
+	
+        	case 5:
+        	    showTransactions(&user);
+        	    break;
+	
+        	default:
+        	    printf("Please select options 1-5 or 9 to end\n");
+        	    break;
+   	   }
+
+	} while (userSelection != 9);
+			
 	
 	return 0;
 }
